@@ -34,8 +34,6 @@ IF NOT '%ERRORLEVEL%'=='0' (
 )
 
 SET BIT_ROOT=%1
-ECHO %BIT_ROOT%
-PAUSE
 SET WEBSITE_NAME=%2
 SET USERNAME=%3
 SET PASSWORD=%4
@@ -46,14 +44,6 @@ SET GIT_ROOT=%DEPLOYMENT_ROOT%/%GIT_FOLDER_NAME%
 SET GIT_REPOSITORY_NAME=https://%USERNAME%:%PASSWORD%@%WEBSITE_NAME%.scm.azurewebsites.net:443/%WEBSITE_NAME%.git
 
 ECHO INIT GIT REPOSITORY %WEBSITE_NAME% IN %BIT_ROOT% UNDER %GIT_ROOT%
-
-FOR /F "delims=" %%X IN ('%GIT_EXE% describe --abbrev^=10') DO (
-    SET DEPLOYMENT_VERSION=%%X
-)
-
-FOR /F "delims=" %%X IN ('%GIT_EXE% --no-pager show -s --format^=[%%ai]%%ae:%%s') DO (
-    SET DEPLOYMENT_DETAIL=%%X
-)
 
 IF EXIST "%GIT_ROOT%\.git" (
     ECHO Deploy from %BIT_ROOT% to %GIT_ROOT%
@@ -87,17 +77,16 @@ FOR /F %%X IN ('DIR /A /A-D /B') DO (
 )
 
 POPD
-robocopy.exe "%BIT_ROOT%" "%GIT_ROOT%" /S
 
-ECHO {> "%GIT_ROOT%\version.js"
-ECHO   "version": "%DEPLOYMENT_VERSION%",>> "%GIT_ROOT%\version.js"
-ECHO   "detail": "%DEPLOYMENT_DETAIL%">> "%GIT_ROOT%\version.js"
-ECHO }>> "%GIT_ROOT%\version.js"
+robocopy.exe "%BIT_ROOT%" "%GIT_ROOT%" /S >NUL 2>&1
+
+PUSHD "%GIT_ROOT%"
 %GIT_EXE% add . --all --force
 %GIT_EXE% config user.name %USERNAME%
 %GIT_EXE% config user.email %USERNAME%@microsoft.com
 %GIT_EXE% commit -m "Deploy %DEPLOYMENT_VERSION%"
 %GIT_EXE% push origin master
+POPD
 
 IF NOT '%ERRORLEVEL%'=='0' (
     GOTO EXIT
