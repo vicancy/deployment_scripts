@@ -11,13 +11,13 @@ FOR %%X IN (%*) DO (
     SET /A ARGC+=1
 )
 
-IF NOT "%ARGC%" == "5" (
-    ECHO Usage: "%~f0" ^<drop folder^> ^<website name^> ^<deploy user name^> ^<deploy password^> 1>&2
+IF NOT "%ARGC%" == "6" (
+    ECHO Usage: "%~f0" ^<drop folder^> ^<website name^> ^<deploy user name^> ^<deploy password^> ^<deploy root folder^> 1>&2
     SET ERRORLEVEL=-1
     GOTO EXIT
 )
 
-ECHO EXECUTING "%~f0" %1 %2 %3 %4
+ECHO EXECUTING "%~f0" %1 %2 %3 %4 %5
 
 SET GIT_EXE=git.exe
 
@@ -33,15 +33,16 @@ IF NOT '%ERRORLEVEL%'=='0' (
     )
 )
 
-SET DEPLOYMENT_ROOT=%1
-
+SET BIT_ROOT=%1
+ECHO %BIT_ROOT%
+PAUSE
 SET WEBSITE_NAME=%2
 SET USERNAME=%3
 SET PASSWORD=%4
+SET DEPLOYMENT_ROOT=%5
 
 SET GIT_FOLDER_NAME=GIT_%WEBSITE_NAME%
 SET GIT_ROOT=%DEPLOYMENT_ROOT%/%GIT_FOLDER_NAME%
-SET BIT_ROOT=%DEPLOYMENT_ROOT%/%WEBSITE_NAME%
 SET GIT_REPOSITORY_NAME=https://%USERNAME%:%PASSWORD%@%WEBSITE_NAME%.scm.azurewebsites.net:443/%WEBSITE_NAME%.git
 
 ECHO INIT GIT REPOSITORY %WEBSITE_NAME% IN %BIT_ROOT% UNDER %GIT_ROOT%
@@ -85,7 +86,9 @@ FOR /F %%X IN ('DIR /A /A-D /B') DO (
     DEL /A "%%X"
 )
 
+POPD
 robocopy.exe "%BIT_ROOT%" "%GIT_ROOT%" /S
+
 ECHO {> "%GIT_ROOT%\version.js"
 ECHO   "version": "%DEPLOYMENT_VERSION%",>> "%GIT_ROOT%\version.js"
 ECHO   "detail": "%DEPLOYMENT_DETAIL%">> "%GIT_ROOT%\version.js"
@@ -99,8 +102,6 @@ ECHO }>> "%GIT_ROOT%\version.js"
 IF NOT '%ERRORLEVEL%'=='0' (
     GOTO EXIT
 )
-
-POPD
 
 :EXIT
 EXIT /B %ERRORLEVEL%
